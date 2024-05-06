@@ -1,14 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deploy MBA</title>
-</head>
+{% include "includes/head.html" %}
 
 <body>
-    <h1>Hello World!</h1>
+    <div class="container mt-5 py-5">
+        <h1 class="text-center">Frequent Itemsets</h1>
+        <hr>
+        <div class="row">
+            <div class="col-md-6">
+                <h2>Pilih Kategori</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <p>Pilih Kategori</p>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Kategori
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                {% for category in categories %}
+                                <a class="dropdown-item" href="#">{{ category
+                                    }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h2>Masukkan Produk 1</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <input type="text" class="form-control" placeholder="Masukkan Produk 1">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-success mt-3">Tambah</button>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <button type="button" class="btn btn-primary">Proses</button>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <h2>Hasil setelah dapat memproses Masukkan Produk</h2>
+                <table class="table" id="result-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">No</th>
+                            <th scope="col">Rule</th>
+                            <th scope="col">Support</th>
+                            <th scope="col">Confidence</th>
+                            <th scope="col">Lift</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if evaluation_results %}
+                        {% set index = 1 %}
+                        {% for itemset, metrics in evaluation_results.items() %}
+                        <tr>
+                            <td>{{ index }}</td>
+                            <td>{{ itemset[0] }} ➔ {{ itemset[1] }}</td>
+                            <td>{{ metrics['support_AB'] }}</td>
+                            <td>{{ metrics['confidence'] }}</td>
+                            <td>{{ metrics['lift'] }}</td>
+                        </tr>
+                        {% set index = index + 1 %}
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="5" id="no-results">No results found</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/2.0.6/js/dataTables.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function () {
+            $('#result-table').DataTable({
+                "order": [[4, "desc"]] // Sort by the 5th column (index 4) in descending order (lift)
+            });
+        });
+    </script>
+
 </body>
 
 </html>
