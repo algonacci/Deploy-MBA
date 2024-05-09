@@ -7,40 +7,23 @@
     <div class="container mt-5 py-5">
         <h1 class="text-center">Frequent Itemsets</h1>
         <hr>
-        <div class="row">
-            <div class="col-md-6">
-                <h2>Pilih Kategori</h2>
-                <div class="card">
-                    <div class="card-body">
-                        <p>Pilih Kategori</p>
-                        <div class="dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton"
-                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Kategori
-                            </button>
-                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                {% for category in categories %}
-                                <a class="dropdown-item" href="#">{{ category
-                                    }}</a>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
+        <div id="itemFields">
+            <div class="row">
+                <div class="col-md-6">
+                    <h2>Pilih Kategori</h2>
+                </div>
+                <div class="col-md-6">
+                    <h2>Masukkan Produk 1</h2>
                 </div>
             </div>
-            <div class="col-md-6">
-                <h2>Masukkan Produk 1</h2>
-                <div class="card">
-                    <div class="card-body">
-                        <input type="text" class="form-control" placeholder="Masukkan Produk 1">
-                    </div>
-                </div>
-                <button type="button" class="btn btn-success mt-3">Tambah</button>
-            </div>
+
         </div>
+
+        <button type="button" class="btn btn-success mt-3" id="addItem">Tambah</button>
+
         <div class="row mt-4">
             <div class="col-md-12">
-                <button type="button" class="btn btn-primary">Proses</button>
+                <button type="button" class="btn btn-primary" id="processButton">Proses</button>
             </div>
         </div>
         <div class="row mt-4">
@@ -77,6 +60,25 @@
                     </tbody>
                 </table>
             </div>
+            <div class="col-md-12 mt-4">
+                <h2>Jumlah Transaksi Tiap Barang</h2>
+                <table class="table" id="transaction-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Product</th>
+                            <th scope="col">Total Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product, count in product_counts.items() %}
+                        <tr>
+                            <td>{{ product }}</td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
@@ -90,8 +92,131 @@
             $('#result-table').DataTable({
                 "order": [[4, "desc"]] // Sort by the 5th column (index 4) in descending order (lift)
             });
+            $('#transaction-table').DataTable({
+                "order": [[1, "desc"]] // Sort by the 5th column (index 4) in descending order (lift)
+            });
         });
     </script>
+    <script>
+        function getItemNames(categorySelectId, productSelectId) {
+            var category = document.getElementById(categorySelectId).value;
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200) {
+                    var itemNames = JSON.parse(this.responseText);
+                    var productDropdown = document.getElementById(productSelectId);
+                    productDropdown.innerHTML = '<option value="" disabled selected>Pilih Produk</option>'; // Reset with disabled option
+                    itemNames.forEach(function (itemName) {
+                        var option = document.createElement("option");
+                        option.value = itemName;
+                        option.text = itemName;
+                        productDropdown.add(option);
+                    });
+                }
+            };
+            xhr.open("POST", "/get_item_names", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.send("category=" + encodeURIComponent(category));
+        }
+
+        const itemFieldsContainer = document.getElementById("itemFields");
+        let rowCounter = 0;
+
+        function addNewItemRow() {
+            const newItemRow = document.createElement("div");
+            newItemRow.classList.add("row", "mt-2");
+            const categorySelectId = `category-${rowCounter}`;
+            const productSelectId = `product-${rowCounter}`;
+            newItemRow.innerHTML = `
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <p>Pilih Kategori</p>
+                            <select name="category" id="${categorySelectId}" class="form-control">
+                                <option value="" disabled selected>Pilih Kategori</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <p>Pilih Produk</p>
+                            <select id="${productSelectId}" class="form-control">
+                                <option value="" disabled selected>Pilih Produk</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-12 text-center mt-2">
+                    <button type="button" class="btn btn-danger removeItem">Remove</button>
+                </div>
+            `;
+            itemFieldsContainer.appendChild(newItemRow);
+            document.getElementById(categorySelectId).onchange = function () {
+                getItemNames(categorySelectId, productSelectId);
+            };
+
+            // Attach event listener to remove button
+            newItemRow.querySelector('.removeItem').addEventListener('click', function () {
+                newItemRow.remove();
+            });
+
+            rowCounter++;
+        }
+
+
+        $("#addItem").click(addNewItemRow);
+    </script>
+
+    <script>
+        function submitItemSets() {
+            const categories = [];
+            const products = [];
+
+            // Collect all category and product selections
+            document.querySelectorAll('[id^="category-"]').forEach((elem) => {
+                categories.push(elem.value);
+            });
+            document.querySelectorAll('[id^="product-"]').forEach((elem) => {
+                products.push(elem.value);
+            });
+
+            // Send the data via AJAX to the Flask endpoint
+            $.ajax({
+                url: '/save_itemsets',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ categories, products }),
+                success: function (response) {
+                    Toastify({
+                        text: "Data Saved Successfully!",
+                        backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+                        className: "info",
+                    }).showToast();
+
+                    // Clear all dropdowns after submission
+                    document.querySelectorAll('select').forEach(select => {
+                        select.selectedIndex = 0; // Reset to the first option (disabled "Pilih ...")
+                    });
+                },
+                error: function () {
+                    Toastify({
+                        text: "Error Saving Data",
+                        backgroundColor: "linear-gradient(to right, #ff5f6d, #ffc371)",
+                        className: "info",
+                    }).showToast();
+                }
+            });
+        }
+
+        $("#processButton").click(submitItemSets);
+    </script>
+
+
 
 </body>
 

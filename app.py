@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from mlxtend.frequent_patterns import fpgrowth
 from mlxtend.preprocessing import TransactionEncoder
 import pandas as pd
@@ -6,13 +6,16 @@ from helpers import (generate_conditional_pattern_base,
                      build_conditional_fp_tree,
                      generate_frequent_patterns,
                      generate_frequent_2_itemsets,
-                     evaluate_association_rules)
+                     evaluate_association_rules,
+                     get_item_names)
+from collections import Counter
 
 
 app = Flask(__name__)
 te = TransactionEncoder()
 
 df = pd.read_excel("BulanMei2022.xlsx")
+print(df.columns)
 transactions = df.groupby('order no').apply(
     lambda x: list(x['item name'])).tolist()
 
@@ -75,7 +78,42 @@ def index():
     evaluation_results = evaluate_association_rules(
         frequent_2_itemsets_result, frequent_patterns_result)
 
-    return render_template("pages/index.html", evaluation_results=evaluation_results)
+    categories = df["item group"].unique()
+
+    transaction_counters = [Counter(transaction)
+                            for transaction in transactions]
+    product_counts = {}
+    for counter in transaction_counters:
+        for product, count in counter.items():
+            if product not in product_counts:
+                product_counts[product] = 0
+            product_counts[product] += count
+
+    return render_template("pages/index.html",
+                           evaluation_results=evaluation_results,
+                           categories=categories,
+                           product_counts=product_counts,
+                           )
+
+
+@app.route("/get_item_names", methods=["POST"])
+def get_item_names_route():
+    category = request.form.get("category")
+    item_names = get_item_names(df, category)
+    return jsonify(item_names)
+
+
+@app.route('/save_itemsets', methods=['POST'])
+def save_itemsets():
+    data = request.json
+    categories = data.get('categories', [])
+    products = data.get('products', [])
+
+    with open("itemsets.txt", "w") as file:
+        for category, product in zip(categories, products):
+            file.write(f"Category: {category}, Product: {product}\n")
+
+    return jsonify({"status": "success"}), 200
 
 
 if __name__ == "__main__":

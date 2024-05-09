@@ -86,3 +86,7 @@ def evaluate_association_rules(association_rules, frequent_patterns):
         evaluation_results[itemset] = {'support_AB': support_AB, 'support_A': support_A,
                                        'support_B': support_B, 'confidence': confidence, 'lift': lift}
     return evaluation_results
+
+
+def get_item_names(df, group_name):
+    return df[df["item group"] == group_name]["item name"].unique().tolist()
