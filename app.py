@@ -1,3 +1,5 @@
+import seaborn as sns
+import matplotlib.pyplot as plt
 from flask import Flask, render_template, request, jsonify
 from mlxtend.frequent_patterns import fpgrowth
 from mlxtend.preprocessing import TransactionEncoder
@@ -9,6 +11,8 @@ from helpers import (generate_conditional_pattern_base,
                      evaluate_association_rules,
                      get_item_names)
 from collections import Counter
+import matplotlib
+matplotlib.use('agg')
 
 
 app = Flask(__name__)
@@ -89,10 +93,33 @@ def index():
                 product_counts[product] = 0
             product_counts[product] += count
 
+    product_freq_df = pd.DataFrame.from_dict(
+        product_counts, orient='index', columns=['Frequency']).sort_values(by="Frequency", ascending=False)
+    product_freq_df = product_freq_df.reset_index().rename(
+        columns={'index': 'Product'})
+
+    plt.figure(figsize=(10, 8))
+    barplot = sns.barplot(x='Frequency', y='Product',
+                          data=product_freq_df.head(10), palette='Blues_d')
+    plt.title('Top 10 Product Frequencies')
+    plt.xlabel('Frequency')
+    plt.ylabel('Product')
+
+    # Menambahkan anotasi frekuensi pada setiap bar
+    for index, row in product_freq_df.head(10).iterrows():
+        barplot.text(row['Frequency'], index, f"{row['Frequency']}",
+                     va='center', fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
+
+    sns.despine(left=True, bottom=True)
+
+    frequency_plot_path = "static/product_frequency_plot.png"
+    plt.savefig(frequency_plot_path, bbox_inches='tight')
+
     return render_template("pages/index.html",
                            evaluation_results=evaluation_results,
                            categories=categories,
                            product_counts=product_counts,
+                           frequency_plot_path=frequency_plot_path,
                            )
 
 
