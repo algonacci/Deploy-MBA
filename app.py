@@ -20,14 +20,12 @@ matplotlib.use('agg')
 app = Flask(__name__)
 te = TransactionEncoder()
 
-df = pd.read_excel("BulanMei2022.xlsx")
-print(df.columns)
-transactions = df.groupby('order no').apply(
-    lambda x: list(x['item name'])).tolist()
-
 
 @app.route("/")
 def index():
+    df = pd.read_excel("BulanMei2022.xlsx")
+    transactions = df.groupby('order no').apply(
+        lambda x: list(x['item name'])).tolist()
     te_ary = te.fit(transactions).transform(transactions)
     df_encoded = pd.DataFrame(te_ary, columns=te.columns_)
     frequent_itemsets = fpgrowth(
@@ -127,6 +125,7 @@ def index():
 
 @app.route("/get_item_names", methods=["POST"])
 def get_item_names_route():
+    df = pd.read_excel("BulanMei2022.xlsx")
     category = request.form.get("category")
     item_names = get_item_names(df, category)
     return jsonify(item_names)
