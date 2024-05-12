@@ -1,3 +1,5 @@
+import uuid
+import openpyxl
 import seaborn as sns
 import matplotlib.pyplot as plt
 from flask import Flask, render_template, request, jsonify
@@ -136,11 +138,29 @@ def save_itemsets():
     categories = data.get('categories', [])
     products = data.get('products', [])
 
-    with open("itemsets.txt", "w") as file:
-        for category, product in zip(categories, products):
-            file.write(f"Category: {category}, Product: {product}\n")
+    try:
+        # Load file Excel yang sudah ada
+        workbook = openpyxl.load_workbook("BulanMei2022.xlsx")
+        sheet = workbook.active
 
-    return jsonify({"status": "success"}), 200
+        # Ambil nomor baris terakhir
+        last_row = sheet.max_row
+
+        # Tambahkan data baru ke baris selanjutnya
+        for category, product in zip(categories, products):
+            new_row = last_row + 1
+            sheet.cell(row=new_row, column=1,
+                       value=str(uuid.uuid4()))  # order_id
+            sheet.cell(row=new_row, column=17, value=category)  # item group
+            sheet.cell(row=new_row, column=18, value=product)  # item name
+            last_row = new_row
+
+        # Simpan perubahan ke file Excel
+        workbook.save("BulanMei2022.xlsx")
+
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":
