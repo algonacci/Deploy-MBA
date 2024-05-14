@@ -36,6 +36,7 @@
                             <th scope="col">Support</th>
                             <th scope="col">Confidence</th>
                             <th scope="col">Lift</th>
+                            <th scope="col">Status</th> <!-- Tambahkan header kolom Status -->
                         </tr>
                     </thead>
                     <tbody>
@@ -47,12 +48,23 @@
                             <td>{{ metrics['support_AB'] }}</td>
                             <td>{{ metrics['confidence'] }}</td>
                             <td>{{ metrics['lift'] }}</td>
+                            <td>
+                                {% if metrics['lift'] > 4 %}
+                                Barang ini harus berdekatan
+                                {% elif metrics['lift'] > 2 %}
+                                Barang ini sangat cocok berdekatan
+                                {% elif metrics['lift'] > 1 %}
+                                Barang ini lumayan cocok berdekatan
+                                {% else %}
+                                Barang ini lumayan sering dibeli / bisa diletakkan berdekatan
+                                {% endif %}
+                            </td>
                         </tr>
                         {% set index = index + 1 %}
                         {% endfor %}
                         {% else %}
                         <tr>
-                            <td colspan="5" id="no-results">No results found</td>
+                            <td colspan="6" id="no-results">No results found</td>
                         </tr>
                         {% endif %}
                     </tbody>
